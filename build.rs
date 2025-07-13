@@ -67,18 +67,6 @@ fn main() {
         .flag_if_supported("-std=c++20")
         .flag_if_supported("-fPIC");
 
-    // Support for ARM MacOS
-    if cfg!(target_os = "macos") {
-        builder.compiler("g++-13")  // Homebrew GCC on macOS
-            .archiver("gcc-ar-13")  // Use GCC's archiver
-            .cpp_set_stdlib(None)  // Don't force libc++, let GCC choose
-            .flag("-target")
-            .flag("arm64-apple-darwin");  // Explicit ARM64 target
-
-        // Add ARM64 optimization for Apple Silicon
-        builder.flag_if_supported("-mcpu=apple-m1");
-    }
-
     // Link to AGC libraries
     println!(
         "cargo:rustc-link-search=native={}",
@@ -123,6 +111,33 @@ fn main() {
     // Rebuild if the bridge changes
     println!("cargo:rerun-if-changed=src/lib.rs");
     println!("cargo:rerun-if-changed=src/agc_bridge.cpp");
+
+    // Support for Homebrew packages on MacOS
+    // ACG won't compile without G++ installed by Homebrew.
+    // Run `brew install cmake zlib gcc@11 make zstd` before building
+    if cfg!(target_os = "macos") {
+        // Make Cargo invoke g++-11 as the linker,
+        // and pass it the Homebrew GCC library path.
+        println!("cargo:rustc-linker=g++-11");
+        println!("cargo:rustc-link-arg=-L/opt/homebrew/opt/gcc@11/lib/gcc/11");
+        println!("cargo:rustc-link-search=native=/opt/homebrew/opt/gcc@11/lib/gcc/11");
+
+        env::set_var("CC", "gcc-11");
+        env::set_var("CXX", "g++-11");
+
+        if cfg!(target_arch = "aarch64") {
+            // MacOS on Arm
+            env::set_var("PLATFORM", "arm8");
+        }
+
+        // Mirror LIBRARY_PATH and LD_LIBRARY_PATH so any spawned processes
+        // (e.g. the C++ compiler) can find its own libs.
+        let brew_lib = "/opt/homebrew/opt/gcc@11/lib/gcc/11";
+        let prev = env::var("LIBRARY_PATH").unwrap_or_default();
+        env::set_var("LIBRARY_PATH", format!("{}:{}", brew_lib, prev));
+        let prev_ld = env::var("LD_LIBRARY_PATH").unwrap_or_default();
+        env::set_var("LD_LIBRARY_PATH", format!("{}:{}", brew_lib, prev_ld));
+    }
 
     builder.compile("agc-bridge");
 }

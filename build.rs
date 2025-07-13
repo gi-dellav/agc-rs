@@ -55,8 +55,8 @@ fn main() {
     };
 
     // Build the C++ bridge code
-    let mut binding = cxx_build::bridge("src/lib.rs");
-    let builder = binding;
+    let binding = cxx_build::bridge("src/lib.rs");
+    let mut builder = binding;
 
     builder.file("src/agc_bridge.cpp")
         .include(&agc_src) // Add AGC root for relative includes

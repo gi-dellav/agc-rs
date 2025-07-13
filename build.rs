@@ -55,7 +55,7 @@ fn main() {
     };
 
     // Build the C++ bridge code
-    cxx_build::bridge("src/lib.rs")
+    let mut builder = cxx_build::bridge("src/lib.rs")
         .file("src/agc_bridge.cpp")
         .include(&agc_src) // Add AGC root for relative includes
         .include(agc_src.join("src"))
@@ -63,7 +63,21 @@ fn main() {
         .include(agc_src.join("src/core"))
         .include(agc_src.join("3rd_party")) // Add 3rd_party for zstd includes
         .flag_if_supported("-std=c++20")
-        .compile("agc-bridge");
+
+    // Support for ARM MacOS
+    if cfg!(target_os = "macos") {
+        builder
+            .compiler("g++-13")  // Homebrew GCC on macOS
+            .archiver("gcc-ar-13")  // Use GCC's archiver
+            .cpp_set_stdlib(None)  // Don't force libc++, let GCC choose
+            .flag("-target")
+            .flag("arm64-apple-darwin");  // Explicit ARM64 target
+
+        // Add ARM64 optimization for Apple Silicon
+        builder.flag_if_supported("-mcpu=apple-m1");
+    }
+
+    builder.compile("agc-bridge");
 
     // Link to AGC libraries
     println!(

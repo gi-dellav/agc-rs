@@ -79,8 +79,6 @@ fn main() {
         builder.flag_if_supported("-mcpu=apple-m1");
     }
 
-    builder.compile("agc-bridge");
-
     // Link to AGC libraries
     println!(
         "cargo:rustc-link-search=native={}",
@@ -125,4 +123,6 @@ fn main() {
     // Rebuild if the bridge changes
     println!("cargo:rerun-if-changed=src/lib.rs");
     println!("cargo:rerun-if-changed=src/agc_bridge.cpp");
+
+    builder.compile("agc-bridge");
 }

@@ -30,6 +30,8 @@ let sequence = agc.get_contig_sequence("sample1", "chr1", 100, 200)?;
 
 ## Building
 
+NOTE: If you are using macos, you need to install [Homebrew](https://brew.sh/) and run `brew install cmake zlib gcc@11 make zstd` in order to install dependencies.
+
 This crate includes vendored AGC source code and will build it automatically. Just run:
 
 ```bash
